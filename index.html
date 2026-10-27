@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NZ Curriculum Phase 3 - Number Strand (Part 2)</title>
+  <style>
+    :root {
+      --primary: #0066cc;
+      --secondary: #004080;
+      --bg: #f4f7f9;
+      --card-bg: #ffffff;
+      --text: #333333;
+      --border: #cccccc;
+      --correct: #28a745;
+      --incorrect: #dc3545;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 750px;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    h1, h2, h3 {
+      color: var(--secondary);
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--secondary);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .option-btn {
+      background: white;
+      border: 2px solid var(--border);
+      padding: 14px;
+      border-radius: 8px;
+      text-align: left;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .option-btn:hover {
+      border-color: var(--primary);
+      background-color: #f0f7ff;
+    }
+
+    .option-btn.selected {
+      border-color: var(--primary);
+      background-color: #e0f0ff;
+      font-weight: bold;
+    }
+
+    .svg-illustration {
+      display: block;
+      margin: 20px auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background-color: #e0e0e0;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--primary);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .teacher-panel {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px dashed var(--border);
+    }
+
+    .feedback-box {
+      background-color: #f8f9fa;
+      border-left: 4px solid var(--primary);
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 4px;
+    }
+
+    .curriculum-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      color: white;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .stage-working-towards { background-color: #ff9800; }
+    .stage-at { background-color: #28a745; }
+    .stage-beyond { background-color: #007bff; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- PAGE 0: STUDENT DETAILS -->
+  <div id="page-0" class="page active">
+    <h1>NZ Curriculum Phase 3: Number Strand (Part 2)</h1>
+    <p>Please enter your full name and year level to begin your test.</p>
+    <div class="input-group">
+      <label for="studentName">Full Name:</label>
+      <input type="text" id="studentName" placeholder="e.g., Wiremu Smith">
+    </div>
+    <div class="input-group">
+      <label for="yearLevel">Year Level:</label>
+      <input type="text" id="yearLevel" placeholder="e.g., Year 7 or Year 8">
+    </div>
+    <button class="btn" onclick="startTest()">Start Test</button>
+  </div>
+
+  <!-- CONTAINER FOR TEST QUESTIONS -->
+  <div id="test-container"></div>
+
+  <!-- PAGE 16: RESULTS & FEEDBACK -->
+  <div id="page-16" class="page">
+    <h2>Test Complete!</h2>
+    <div id="curriculumBadge" class="curriculum-badge"></div>
+    <p id="studentScoreText"></p>
+    
+    <div class="feedback-box">
+      <h3>Areas for Improvement & Feedback</h3>
+      <ul id="feedbackList"></ul>
+    </div>
+
+    <!-- TEACHER ACCESS SECTION -->
+    <div class="teacher-panel">
+      <h3>Teacher Portal</h3>
+      <p>Enter Teacher PIN to download CSV results directly:</p>
+      <div style="display: flex; gap: 10px; max-width: 300px;">
+        <input type="password" id="teacherPin" placeholder="Enter PIN" style="padding: 10px;">
+        <button class="btn" onclick="verifyPinAndExport()">Export CSV</button>
+      </div>
+      <p id="pinError" style="color: red; display: none; margin-top: 5px;">Incorrect PIN.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // YOUR LIVE GOOGLE APPS SCRIPT WEB APP URL
+  const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzMUYn4W2abu1-p2A-qalrIHhXnTrOqEQqAYbTQvJ7H1p8YKPR-5as2piozOvEFDNT0/exec";
+
+  let studentData = {
+    name: "",
+    year: "",
+    answers: {},
+    score: 0,
+    percentage: 0,
+    stage: "",
+    improvements: []
+  };
+
+  const questions = [
+    {
+      id: 1,
+      question: "Which comparison between negative decimals is correct?",
+      svg: `<svg class="svg-illustration" width="350" height="70" viewBox="0 0 350 70">
+              <line x1="20" y1="35" x2="330" y2="35" stroke="#333" stroke-width="3"/>
+              <line x1="60" y1="25" x2="60" y2="45" stroke="#333" stroke-width="2"/>
+              <line x1="180" y1="25" x2="180" y2="45" stroke="#333" stroke-width="2"/>
+              <line x1="300" y1="25" x2="300" y2="45" stroke="#333" stroke-width="2"/>
+              <text x="60" y="60" font-size="16" text-anchor="middle">-4</text>
+              <text x="180" y="60" font-size="16" text-anchor="middle">-3.4</text>
+              <text x="300" y="60" font-size="16" text-anchor="middle">-3</text>
+            </svg>`,
+      options: [
+        { label: "A", text: "-3.4 > -3", correct: false },
+        { label: "B", text: "-3.4 < -3", correct: true },
+        { label: "C", text: "-3.4 = -3.04", correct: false },
+        { label: "D", text: "-3 < -4", correct: false }
+      ],
+      topic: "Comparing and ordering negative decimals"
+    },
+    {
+      id: 2,
+      question: "Convert the fraction 5/8 into a decimal using division.",
+      svg: null,
+      options: [
+        { label: "A", text: "0.58", correct: false },
+        { label: "B", text: "0.65", correct: false },
+        { label: "C", text: "0.625", correct: true },
+        { label: "D", text: "0.85", correct: false }
+      ],
+      topic: "Converting fractions to terminating decimals"
+    },
+    {
+      id: 3,
+      question: "Which fraction converts to a repeating decimal?",
+      svg: null,
+      options: [
+        { label: "A", text: "3/4", correct: false },
+        { label: "B", text: "7/10", correct: false },
+        { label: "C", text: "1/8", correct: false },
+        { label: "D", text: "2/3", correct: true }
+      ],
+      topic: "Identifying repeating and terminating decimals"
+    },
+    {
+      id: 4,
+      question: "Multiply the decimals: 2.3 × 4.5",
+      svg: null,
+      options: [
+        { label: "A", text: "10.35", correct: true },
+        { label: "B", text: "103.5", correct: false },
+        { label: "C", text: "8.15", correct: false },
+        { label: "D", text: "10.15", correct: false }
+      ],
+      topic: "Multiplying positive decimals"
+    },
+    {
+      id: 5,
+      question: "Solve using benchmark estimation: Is 0.73 + 0.8 + 0.999 less than 3?",
+      svg: null,
+      options: [
+        { label: "A", text: "No, because 0.999 is equal to 1.", correct: false },
+        { label: "B", text: "Yes, because each number is close to but strictly less than 1.", correct: true },
+        { label: "C", text: "No, because their sum is 3.529.", correct: false },
+        { label: "D", text: "Yes, because the answer is exactly 2.", correct: false }
+      ],
+      topic: "Estimation and benchmarks with decimals"
+    },
+    {
+      id: 6,
+      question: "Round 14.8765 to the nearest hundredth.",
+      svg: null,
+      options: [
+        { label: "A", text: "14.87", correct: false },
+        { label: "B", text: "14.88", correct: true },
+        { label: "C", text: "14.90", correct: false },
+        { label: "D", text: "14.877", correct: false }
+      ],
+      topic: "Rounding decimals to hundredths"
+    },
+    {
+      id: 7,
+      question: "Find 35% of $180.",
+      svg: null,
+      options: [
+        { label: "A", text: "$54.00", correct: false },
+        { label: "B", text: "$60.00", correct: false },
+        { label: "C", text: "$63.00", correct: true },
+        { label: "D", text: "$117.00", correct: false }
+      ],
+      topic: "Finding percentages of whole numbers"
+    },
+    {
+      id: 8,
+      question: "If 40% of an amount is $28, what is the whole amount (100%)?",
+      svg: null,
+      options: [
+        { label: "A", text: "$70.00", correct: true },
+        { label: "B", text: "$68.00", correct: false },
+        { label: "C", text: "$112.00", correct: false },
+        { label: "D", text: "$56.00", correct: false }
+      ],
+      topic: "Finding the whole (100%) given a percentage"
+    },
+    {
+      id: 9,
+      question: "Which rule explains why 45% of 20 equals 20% of 45?",
+      svg: null,
+      options: [
+        { label: "A", text: "Percentage equivalence: both expressions simplify to 9", correct: true },
+        { label: "B", text: "Additive inverses cancel each other out", correct: false },
+        { label: "C", text: "Decimals always double when multiplied by 20", correct: false },
+        { label: "D", text: "The denominator changes from 10 to 100", correct: false }
+      ],
+      topic: "Percentage equivalence in calculations"
+    },
+    {
+      id: 10,
+      question: "A total cost of $43.27 is paid with cash in New Zealand. What is the rounded cash price?",
+      svg: `<svg class="svg-illustration" width="220" height="90" viewBox="0 0 220 90">
+              <rect x="10" y="10" width="200" height="70" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+              <text x="110" y="42" font-size="16" font-weight="bold" fill="#1b5e20" text-anchor="middle">TOTAL: $43.27</text>
+              <text x="110" y="65" font-size="14" fill="#2e7d32" text-anchor="middle">NZ Cash Rounding</text>
+            </svg>`,
+      options: [
+        { label: "A", text: "$43.20", correct: false },
+        { label: "B", text: "$43.30", correct: true },
+        { label: "C", text: "$43.25", correct: false },
+        { label: "D", text: "$43.00", correct: false }
+      ],
+      topic: "Financial mathematics: NZ cash rounding"
+    },
+    {
+      id: 11,
+      question: "Calculate the new price after applying a 35% discount on an item costing $180.",
+      svg: null,
+      options: [
+        { label: "A", text: "$117.00", correct: true },
+        { label: "B", text: "$145.00", correct: false },
+        { label: "C", text: "$63.00", correct: false },
+        { label: "D", text: "$125.00", correct: false }
+      ],
+      topic: "Financial mathematics: Calculating discount outcomes"
+    },
+    {
+      id: 12,
+      question: "A phone plan costs $45 per month. How much will it cost for 1 full year?",
+      svg: null,
+      options: [
+        { label: "A", text: "$450.00", correct: false },
+        { label: "B", text: "$540.00", correct: true },
+        { label: "C", text: "$520.00", correct: false },
+        { label: "D", text: "$600.00", correct: false }
+      ],
+      topic: "Financial mathematics: Yearly finance plans"
+    },
+    {
+      id: 13,
+      question: "Divide $60 between Awhina and Tama in a ratio of 2:3. How much does Tama receive?",
+      svg: null,
+      options: [
+        { label: "A", text: "$24.00", correct: false },
+        { label: "B", text: "$30.00", correct: false },
+        { label: "C", text: "$36.00", correct: true },
+        { label: "D", text: "$40.00", correct: false }
+      ],
+      topic: "Dividing quantities using ratios"
+    },
+    {
+      id: 14,
+      question: "If there are 3 red balls for every 7 blue balls, how many total balls are there when there are 18 red balls?",
+      svg: null,
+      options: [
+        { label: "A", text: "42 balls", correct: false },
+        { label: "B", text: "60 balls", correct: true },
+        { label: "C", text: "54 balls", correct: false },
+        { label: "D", text: "48 balls", correct: false }
+      ],
+      topic: "Proportional reasoning with part-to-part relationships"
+    },
+    {
+      id: 15,
+      question: "Calculate: 327 ÷ 15",
+      svg: null,
+      options: [
+        { label: "A", text: "21.8", correct: true },
+        { label: "B", text: "21.5", correct: false },
+        { label: "C", text: "22.2", correct: false },
+        { label: "D", text: "20.8", correct: false }
+      ],
+      topic: "Dividing whole numbers resulting in decimals"
+    }
+  ];
+
+  function buildTestPages() {
+    const container = document.getElementById("test-container");
+    container.innerHTML = "";
+    questions.forEach((q, index) => {
+      const pageNum = index + 1;
+      const totalPages = questions.length;
+      
+      let html = `
+        <div id="page-${pageNum}" class="page">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${(pageNum / totalPages) * 100}%"></div>
+          </div>
+          <small>Question ${pageNum} of ${totalPages}</small>
+          <h2>${q.question}</h2>
+          ${q.svg ? q.svg : ''}
+          <div class="options-grid">
+      `;
+
+      q.options.forEach(opt => {
+        html += `
+          <button class="option-btn" onclick="selectOption(${pageNum}, '${opt.label}', ${opt.correct}, this)">
+            <strong>${opt.label}.</strong> ${opt.text}
+          </button>
+        `;
+      });
+
+      html += `
+          </div>
+          <div style="margin-top: 25px; display: flex; justify-content: space-between;">
+            ${pageNum > 1 ? `<button class="btn" onclick="navigatePage(${pageNum - 1})">Previous</button>` : '<div></div>'}
+            ${pageNum < totalPages ? `<button class="btn" onclick="navigatePage(${pageNum + 1})">Next</button>` : `<button class="btn" onclick="submitTest()">Submit Test</button>`}
+          </div>
+        </div>
+      `;
+      container.innerHTML += html;
+    });
+  }
+
+  function startTest() {
+    const nameInput = document.getElementById("studentName");
+    const yearInput = document.getElementById("yearLevel");
+    
+    const name = nameInput ? nameInput.value.trim() : "";
+    const year = yearInput ? yearInput.value.trim() : "";
+
+    if (!name || !year) {
+      alert("Please enter your name and year level.");
+      return;
+    }
+
+    studentData.name = name;
+    studentData.year = year;
+    navigatePage(1);
+  }
+
+  function navigatePage(pageNum) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    const targetPage = document.getElementById(`page-${pageNum}`);
+    if (targetPage) {
+      targetPage.classList.add("active");
+    }
+  }
+
+  function selectOption(qNum, label, isCorrect, btnElement) {
+    const parent = btnElement.parentElement;
+    parent.querySelectorAll(".option-btn").forEach(b => b.classList.remove("selected"));
+    btnElement.classList.add("selected");
+
+    studentData.answers[qNum] = {
+      label: label,
+      isCorrect: isCorrect,
+      topic: questions[qNum - 1].topic
+    };
+  }
+
+  function submitTest() {
+    if (Object.keys(studentData.answers).length < questions.length) {
+      if (!confirm("You have unanswered questions. Are you sure you want to submit?")) {
+        return;
+      }
+    }
+
+    let score = 0;
+    let improvements = [];
+
+    questions.forEach(q => {
+      const ans = studentData.answers[q.id];
+      if (ans && ans.isCorrect) {
+        score++;
+      } else {
+        improvements.push(q.topic);
+      }
+    });
+
+    studentData.score = score;
+    studentData.percentage = Math.round((score / questions.length) * 100);
+    studentData.improvements = [...new Set(improvements)];
+
+    if (studentData.percentage < 50) {
+      studentData.stage = "Working Towards Phase 3";
+    } else if (studentData.percentage <= 80) {
+      studentData.stage = "At Phase 3 (Proficient)";
+    } else {
+      studentData.stage = "Beyond Phase 3 (Advanced)";
+    }
+
+    displayResults();
+    sendDataToGoogleSheet();
+  }
+
+  function displayResults() {
+    navigatePage(16);
+    
+    const badge = document.getElementById("curriculumBadge");
+    badge.innerText = studentData.stage;
+    if (studentData.percentage < 50) badge.className = "curriculum-badge stage-working-towards";
+    else if (studentData.percentage <= 80) badge.className = "curriculum-badge stage-at";
+    else badge.className = "curriculum-badge stage-beyond";
+
+    document.getElementById("studentScoreText").innerHTML = `
+      Great effort, <strong>${studentData.name}</strong> (${studentData.year})!<br>
+      You scored <strong>${studentData.score} / ${questions.length}</strong> (${studentData.percentage}%).
+    `;
+
+    const feedbackList = document.getElementById("feedbackList");
+    feedbackList.innerHTML = "";
+    if (studentData.improvements.length === 0) {
+      feedbackList.innerHTML = "<li>Outstanding performance! You showed complete mastery over Phase 3 percentages, financial math, and decimals.</li>";
+    } else {
+      studentData.improvements.forEach(topic => {
+        const li = document.createElement("li");
+        li.innerText = topic;
+        feedbackList.appendChild(li);
+      });
+    }
+  }
+
+  function sendDataToGoogleSheet() {
+    const payload = {
+      studentName: studentData.name,
+      yearLevel: studentData.year,
+      score: studentData.score + " / " + questions.length,
+      percentage: studentData.percentage,
+      curriculumStage: studentData.stage,
+      areasForImprovement: studentData.improvements.join("; ")
+    };
+
+    fetch(GOOGLE_SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).catch(err => console.error("Error sending data:", err));
+  }
+
+  function verifyPinAndExport() {
+    const pin = document.getElementById("teacherPin").value;
+    if (pin === "1335") {
+      document.getElementById("pinError").style.display = "none";
+      exportToCSV();
+    } else {
+      document.getElementById("pinError").style.display = "block";
+    }
+  }
+
+  function exportToCSV() {
+    const headers = ["Student Name", "Year Level", "Score", "Percentage", "Curriculum Stage", "Areas for Improvement"];
+    const row = [
+      `"${studentData.name}"`,
+      `"${studentData.year}"`,
+      `"${studentData.score}/${questions.length}"`,
+      `"${studentData.percentage}%"`,
+      `"${studentData.stage}"`,
+      `"${studentData.improvements.join('; ')}"`
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), row.join(",")].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `student_result_${studentData.name.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  window.onload = buildTestPages;
+</script>
+
+</body>
+</html>
